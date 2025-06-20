@@ -47,7 +47,8 @@
     "download-caches": "node scripts/download-caches.js",
     "export-textures": "npx tsx scripts/cache/export-textures.ts",
     "export-height-map": "npx tsx scripts/cache/export-height-map.ts",
-    "export-locs": "npx tsx scripts/cache/export-locs.ts"
+    "export-loc-locations": "npx tsx scripts/cache/export-loc-locations.ts",
+    "export-loc-ids": "npx tsx scripts/cache/export-loc-ids.ts"
   },
   "eslintConfig": {
     "extends": [
