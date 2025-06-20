@@ -59,7 +59,7 @@ for (const cacheInfo of cacheList.caches) {
     const maxLevel = 3;
     const borderSize = 0;
 
-    let locIds = new Set<String>();
+    let locIds = new Set<number>();
     for (let mx = lowX; mx < highX; mx++) {
         for (let my = lowY; my < highY; my++) {
             const scene = sceneBuilder.buildMapSquareLocs(mx, my);
@@ -67,9 +67,11 @@ for (const cacheInfo of cacheList.caches) {
             const locEntities = sceneLocs.locEntities;
 
             for (const l of locEntities) {
-                locIds.add(l.entity.id.toString());
+                locIds.add(l.entity.id);
             }
         }
     }
-    fs.writeFileSync(outputFile, Array.from(locIds).sort().join(","));
+    const sorted = Array.from(locIds).sort((a, b) => a - b);
+    fs.writeFileSync(outputFile, sorted.join(","));
+    break;
 }
