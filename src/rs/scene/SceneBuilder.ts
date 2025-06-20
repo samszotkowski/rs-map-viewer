@@ -91,39 +91,39 @@ export class SceneBuilder {
         const mapEndX = Math.ceil((baseX + sizeX) / Scene.MAP_SQUARE_SIZE);
         const mapEndY = Math.ceil((baseY + sizeY) / Scene.MAP_SQUARE_SIZE);
 
-        const emptyTerrainIds = new Set<number>();
+        // const emptyTerrainIds = new Set<number>();
 
-        for (let mx = mapStartX; mx < mapEndX; mx++) {
-            for (let my = mapStartY; my < mapEndY; my++) {
-                const terrainData = this.getTerrainData(mx, my);
-                if (terrainData) {
-                    const offsetX = mx * Scene.MAP_SQUARE_SIZE - baseX;
-                    const offsetY = my * Scene.MAP_SQUARE_SIZE - baseY;
-                    this.decodeTerrain(scene, terrainData, offsetX, offsetY, baseX, baseY);
-                } else {
-                    emptyTerrainIds.add(getMapSquareId(mx, my));
-                }
-            }
-        }
+        // for (let mx = mapStartX; mx < mapEndX; mx++) {
+        //     for (let my = mapStartY; my < mapEndY; my++) {
+        //         const terrainData = this.getTerrainData(mx, my);
+        //         if (terrainData) {
+        //             const offsetX = mx * Scene.MAP_SQUARE_SIZE - baseX;
+        //             const offsetY = my * Scene.MAP_SQUARE_SIZE - baseY;
+        //             this.decodeTerrain(scene, terrainData, offsetX, offsetY, baseX, baseY);
+        //         } else {
+        //             emptyTerrainIds.add(getMapSquareId(mx, my));
+        //         }
+        //     }
+        // }
 
-        for (let mx = mapStartX; mx < mapEndX; mx++) {
-            for (let my = mapStartY; my < mapEndY; my++) {
-                if (!emptyTerrainIds.has(getMapSquareId(mx, my))) {
-                    continue;
-                }
-                const endX = (mx + 1) * Scene.MAP_SQUARE_SIZE;
-                const endY = (my + 1) * Scene.MAP_SQUARE_SIZE;
-                const offsetX = mx * Scene.MAP_SQUARE_SIZE - baseX;
-                const offsetY = my * Scene.MAP_SQUARE_SIZE - baseY;
-                const tileX = Math.max(offsetX, 0);
-                const tileY = Math.max(offsetY, 0);
-                const emptySizeX = endX - baseX - tileX;
-                const emptySizeY = endY - baseY - tileY;
-                for (let level = 0; level < scene.levels; level++) {
-                    this.loadEmptyTerrain(scene, level, tileX, tileY, emptySizeX, emptySizeY);
-                }
-            }
-        }
+        // for (let mx = mapStartX; mx < mapEndX; mx++) {
+        //     for (let my = mapStartY; my < mapEndY; my++) {
+        //         if (!emptyTerrainIds.has(getMapSquareId(mx, my))) {
+        //             continue;
+        //         }
+        //         const endX = (mx + 1) * Scene.MAP_SQUARE_SIZE;
+        //         const endY = (my + 1) * Scene.MAP_SQUARE_SIZE;
+        //         const offsetX = mx * Scene.MAP_SQUARE_SIZE - baseX;
+        //         const offsetY = my * Scene.MAP_SQUARE_SIZE - baseY;
+        //         const tileX = Math.max(offsetX, 0);
+        //         const tileY = Math.max(offsetY, 0);
+        //         const emptySizeX = endX - baseX - tileX;
+        //         const emptySizeY = endY - baseY - tileY;
+        //         for (let level = 0; level < scene.levels; level++) {
+        //             this.loadEmptyTerrain(scene, level, tileX, tileY, emptySizeX, emptySizeY);
+        //         }
+        //     }
+        // }
 
         for (let mx = mapStartX; mx < mapEndX; mx++) {
             for (let my = mapStartY; my < mapEndY; my++) {
@@ -137,12 +137,12 @@ export class SceneBuilder {
             }
         }
 
-        this.addTileModels(scene, smoothUnderlays);
-        scene.setTileMinLevels();
+        // this.addTileModels(scene, smoothUnderlays);
+        // scene.setTileMinLevels();
 
-        if (locLoadType === LocLoadType.MODELS) {
-            scene.light(this.locModelLoader.textureLoader, -50, -10, -50);
-        }
+        // if (locLoadType === LocLoadType.MODELS) {
+        //     scene.light(this.locModelLoader.textureLoader, -50, -10, -50);
+        // }
 
         return scene;
     }

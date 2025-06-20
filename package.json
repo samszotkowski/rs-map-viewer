@@ -46,7 +46,8 @@
     "prepare": "husky install",
     "download-caches": "node scripts/download-caches.js",
     "export-textures": "npx tsx scripts/cache/export-textures.ts",
-    "export-height-map": "npx tsx scripts/cache/export-height-map.ts"
+    "export-height-map": "npx tsx scripts/cache/export-height-map.ts",
+    "export-locs": "npx tsx scripts/cache/export-locs.ts"
   },
   "eslintConfig": {
     "extends": [
