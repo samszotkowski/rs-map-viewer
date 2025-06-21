@@ -67,7 +67,17 @@ for (const cacheInfo of cacheList.caches) {
             const locEntities = sceneLocs.locEntities;
 
             for (const l of locEntities) {
-                locIds.add(l.entity.id);
+                const id = l.entity.id;
+                locIds.add(id);
+
+                const transforms = locTypeLoader.load(id).transforms;
+                if (transforms && transforms.length > 0) {
+                    for (const transId of transforms) {
+                        if (transId > 0) {
+                            locIds.add(transId);
+                        }
+                    }
+                }
             }
         }
     }
