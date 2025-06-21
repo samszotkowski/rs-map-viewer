@@ -1,11 +1,9 @@
 import fs from "fs";
 import path from "path";
 
-import { getSceneLocs } from "../../src/mapviewer/webgl/loc/SceneLocs";
 import { CacheSystem } from "../../src/rs/cache/CacheSystem";
 import { getCacheLoaderFactory } from "../../src/rs/cache/loader/CacheLoaderFactory";
-import { LocModelLoader } from "../../src/rs/config/loctype/LocModelLoader";
-import { SceneBuilder } from "../../src/rs/scene/SceneBuilder";
+import { ByteBuffer } from "../../src/rs/io/ByteBuffer";
 import { loadCache, loadCacheInfos, loadCacheList } from "./load-util";
 
 const cacheInfos = loadCacheInfos();
@@ -23,51 +21,28 @@ for (const cacheInfo of cacheList.caches) {
     const cacheSystem = CacheSystem.fromFiles(cache.type, cache.files);
     const loaderFactory = getCacheLoaderFactory(cacheInfo, cacheSystem);
 
-    const underlayTypeLoader = loaderFactory.getUnderlayTypeLoader();
-    const overlayTypeLoader = loaderFactory.getOverlayTypeLoader();
     const locTypeLoader = loaderFactory.getLocTypeLoader();
-    const modelLoader = loaderFactory.getModelLoader();
-    const textureLoader = loaderFactory.getTextureLoader();
-    const seqTypeLoader = loaderFactory.getSeqTypeLoader();
-    const seqFrameLoader = loaderFactory.getSeqFrameLoader();
-    const skeletalSeqLoader = loaderFactory.getSkeletalSeqLoader();
     const mapFileLoader = loaderFactory.getMapFileLoader();
-
-    const locModelLoader = new LocModelLoader(
-        locTypeLoader,
-        modelLoader,
-        textureLoader,
-        seqTypeLoader,
-        seqFrameLoader,
-        skeletalSeqLoader,
-    );
-
-    const sceneBuilder = new SceneBuilder(
-        cache.info,
-        mapFileLoader,
-        underlayTypeLoader,
-        overlayTypeLoader,
-        locTypeLoader,
-        locModelLoader,
-        cache.xteas,
-    );
 
     const lowX = 16;
     const lowY = 19;
     const highX = 65 + 1;
     const highY = 196 + 1;
-    const maxLevel = 3;
-    const borderSize = 0;
 
     let locIds = new Set<number>();
     for (let mx = lowX; mx < highX; mx++) {
         for (let my = lowY; my < highY; my++) {
-            const scene = sceneBuilder.buildMapSquareLocs(mx, my);
-            const sceneLocs = getSceneLocs(locTypeLoader, scene, borderSize, maxLevel);
-            const locEntities = sceneLocs.locEntities;
+            const locData = mapFileLoader.getLocData(mx, my, cache.xteas);
+            if (!locData) {
+                continue;
+            }
 
-            for (const l of locEntities) {
-                const id = l.entity.id;
+            const buffer = new ByteBuffer(locData);
+
+            let id = -1;
+            let idDelta: number;
+            while ((idDelta = buffer.readSmart3()) !== 0) {
+                id += idDelta;
                 locIds.add(id);
 
                 const transforms = locTypeLoader.load(id).transforms;
@@ -78,10 +53,16 @@ for (const cacheInfo of cacheList.caches) {
                         }
                     }
                 }
+
+                let pos = 0;
+                let posDelta: number;
+                while ((posDelta = buffer.readUnsignedSmart()) !== 0) {
+                    pos += posDelta - 1;
+                    buffer.readUnsignedByte();
+                }
             }
         }
     }
     const sorted = Array.from(locIds).sort((a, b) => a - b);
     fs.writeFileSync(outputFile, sorted.join(","));
-    break;
 }

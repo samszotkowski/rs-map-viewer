@@ -75,20 +75,6 @@ export class SceneBuilder {
         return this.mapFileLoader.getNpcSpawnData(mapX, mapY, this.xteasMap);
     }
 
-    buildMapSquareLocs(mapX: number, mapY: number): Scene {
-        const scene = new Scene(Scene.MAX_LEVELS, Scene.MAP_SQUARE_SIZE, Scene.MAP_SQUARE_SIZE);
-
-        const locData = this.getLocData(mapX, mapY);
-        if (!locData) {
-            return scene;
-        }
-        const offsetX = 0;
-        const offsetY = 0;
-        this.decodeLocs(scene, locData, offsetX, offsetY, LocLoadType.NO_MODELS);
-
-        return scene;
-    }
-
     buildScene(
         baseX: number,
         baseY: number,
