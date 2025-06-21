@@ -103,5 +103,4 @@ for (const cacheInfo of cacheList.caches) {
         outData.push(row.join(","));
     }
     fs.writeFileSync(outputFile, outData.join("\n"));
-    break;
 }
