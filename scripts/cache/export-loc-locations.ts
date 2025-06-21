@@ -1,12 +1,9 @@
 import fs from "fs";
 import path from "path";
 
-import { getSceneLocs } from "../../src/mapviewer/webgl/loc/SceneLocs";
 import { CacheSystem } from "../../src/rs/cache/CacheSystem";
 import { getCacheLoaderFactory } from "../../src/rs/cache/loader/CacheLoaderFactory";
-import { LocModelLoader } from "../../src/rs/config/loctype/LocModelLoader";
-import { Scene } from "../../src/rs/scene/Scene";
-import { SceneBuilder } from "../../src/rs/scene/SceneBuilder";
+import { ByteBuffer } from "../../src/rs/io/ByteBuffer";
 import { loadCache, loadCacheInfos, loadCacheList } from "./load-util";
 
 const cacheInfos = loadCacheInfos();
@@ -24,81 +21,87 @@ for (const cacheInfo of cacheList.caches) {
     const cacheSystem = CacheSystem.fromFiles(cache.type, cache.files);
     const loaderFactory = getCacheLoaderFactory(cacheInfo, cacheSystem);
 
-    const underlayTypeLoader = loaderFactory.getUnderlayTypeLoader();
-    const overlayTypeLoader = loaderFactory.getOverlayTypeLoader();
     const locTypeLoader = loaderFactory.getLocTypeLoader();
-    const modelLoader = loaderFactory.getModelLoader();
-    const textureLoader = loaderFactory.getTextureLoader();
-    const seqTypeLoader = loaderFactory.getSeqTypeLoader();
-    const seqFrameLoader = loaderFactory.getSeqFrameLoader();
-    const skeletalSeqLoader = loaderFactory.getSkeletalSeqLoader();
     const mapFileLoader = loaderFactory.getMapFileLoader();
-
-    const locModelLoader = new LocModelLoader(
-        locTypeLoader,
-        modelLoader,
-        textureLoader,
-        seqTypeLoader,
-        seqFrameLoader,
-        skeletalSeqLoader,
-    );
-
-    const sceneBuilder = new SceneBuilder(
-        cache.info,
-        mapFileLoader,
-        underlayTypeLoader,
-        overlayTypeLoader,
-        locTypeLoader,
-        locModelLoader,
-        cache.xteas,
-    );
 
     const lowX = 16;
     const lowY = 19;
     const highX = 65 + 1;
     const highY = 196 + 1;
-    const maxLevel = 3;
-    const borderSize = 0;
+    const mapSquareSize = 64;
 
-    let rows = ["name,id,x,y,level,parent"];
+    let data = new Array();
     for (let mx = lowX; mx < highX; mx++) {
         for (let my = lowY; my < highY; my++) {
-            const baseX = mx * Scene.MAP_SQUARE_SIZE;
-            const baseY = my * Scene.MAP_SQUARE_SIZE;
+            const locData = mapFileLoader.getLocData(mx, my, cache.xteas);
+            if (!locData) {
+                continue;
+            }
 
-            const scene = sceneBuilder.buildMapSquareLocs(mx, my);
-            const sceneLocs = getSceneLocs(locTypeLoader, scene, borderSize, maxLevel);
-            const locEntities = sceneLocs.locEntities;
+            const baseX = mx * mapSquareSize;
+            const baseY = my * mapSquareSize;
 
-            for (const l of locEntities) {
-                const ent = l.entity;
-                const locType = locTypeLoader.load(ent.id);
+            const buffer = new ByteBuffer(locData);
 
-                const name = locType.name;
-                const id = ent.id;
-                const x = ent.tileX + baseX;
-                const y = ent.tileY + baseY;
-                const level = ent.level;
+            let id = -1;
+            let idDelta: number;
+            while ((idDelta = buffer.readSmart3()) !== 0) {
+                id += idDelta;
 
-                rows.push(`${name},${id},${x},${y},${level},-1`);
+                let pos = 0;
+                let posDelta: number;
+                while ((posDelta = buffer.readUnsignedSmart()) !== 0) {
+                    pos += posDelta - 1;
 
-                const transforms = locType.transforms;
-                if (transforms && transforms.length > 0) {
+                    const localX = (pos >> 6) & 0x3f;
+                    const localY = pos & 0x3f;
+                    const x = localX + baseX;
+                    const y = localY + baseY;
+                    const level = pos >> 12;
+
+                    const locType = locTypeLoader.load(id);
+                    const name = locType.name;
+
+                    data.push([name, id, x, y, level, -1]);
+
+                    const transforms = locType.transforms;
                     let transIds = new Set<number>();
-
-                    for (const transId of transforms) {
-                        if (transId > 0) {
-                            transIds.add(transId);
+                    if (transforms && transforms.length > 0) {
+                        for (const transId of transforms) {
+                            if (transId > 0 && !transIds.has(transId)) {
+                                const transName = locTypeLoader.load(transId).name;
+                                data.push([transName, transId, x, y, level, id]);
+                                transIds.add(transId);
+                            }
                         }
                     }
 
-                    for (const transId of transIds) {
-                        const transName = locTypeLoader.load(transId).name;
-                        rows.push(`${transName},${transId},${x},${y},${level},${id}`);
-                    }
+                    buffer.readUnsignedByte();
                 }
             }
         }
     }
-    fs.writeFileSync(outputFile, rows.join("\n"));
+
+    data = data.sort(function (a, b) {
+        const [id_a, x_a, y_a, level_a] = a.slice(1, 5);
+        const [id_b, x_b, y_b, level_b] = b.slice(1, 5);
+        if (id_a == id_b) {
+            if (x_a == x_b) {
+                if (y_a == y_b) {
+                    return level_a - level_b;
+                }
+                return y_a - y_b;
+            }
+            return x_a - x_b;
+        }
+        return id_a - id_b;
+    });
+    data.unshift(["name", "id", "x", "y", "level", "parentId"]);
+
+    let outData = new Array();
+    for (let row of data) {
+        outData.push(row.join(","));
+    }
+    fs.writeFileSync(outputFile, outData.join("\n"));
+    break;
 }
